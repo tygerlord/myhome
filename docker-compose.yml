@@ -1,27 +1,25 @@
-#CURRENT_UID=$(id -u) CURRENT_GID=$(id -g) OH_UID=$(id -u openhab) OH_GID=$(id -g openhab) docker-compose up -d
+#CURRENT_UID=$(id -u) CURRENT_GID=$(id -g) docker-compose up -d
 version: '3.3'
 
 services:
-  openhab:
-    image: "openhab/openhab:latest-debian"
-    container_name: "openhab"
-    restart: always
-    ports: 
-      - "8080:8080"
-      - "8443:8443"
-      - "8101:8101"
+  domotics:
+   image: "ghcr.io/linuxserver/domoticz:latest"
+   container_name: "domoticz"
+   restart: always
+   ports: 
+     - 8080:8080
+     - 6144:6144
+     - 1443:1443
     volumes:
-      - "/etc/localtime:/etc/localtime:ro"
-      - "/etc/timezone:/etc/timezone:ro"
-      - "$HOME/openhab/conf:/openhab/conf"
-      - "$HOME/openhab/userdata:/openhab/userdata"
-      - "$HOME/openhab/addons:/openhab/addons"
+      - "$HOME/domoticz/config:/config"
     environment:
-      OPENHAB_HTTP_PORT: "8080"
-      OPENHAB_HTTPS_PORT: "8443"
-      EXTRA_JAVA_OPTS: "-Duser.timezone=Europe/Paris"
-      USER_ID: "${OH_UID}"
-      GROUP_ID: "${OH_GID}" 
+      - PUID=${CURRENT_UID}
+      - GUID=${CURRENT_GID}
+      - TZ=${TZ}
+      - WEBROOT=domoticz #optional
+    devices:
+      /dev/serial0:/dev/serial0
+
 
   mosquitto:
     image: "eclipse-mosquitto:latest"
