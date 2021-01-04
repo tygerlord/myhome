@@ -6,8 +6,6 @@ services:
     image: "openhab/openhab:latest-debian"
     container_name: "openhab"
     restart: always
-    networks:
-      - openhabnet
     ports: 
       - "8080:8080"
       - "8443:8443"
@@ -30,8 +28,6 @@ services:
     container_name: "mosquitto"
     user: "${CURRENT_UID}:${CURRENT_GID}"
     restart: always
-    networks:
-      - openhabnet
     ports:
       - 1883:1883
       - 8883:8883
@@ -49,8 +45,7 @@ services:
     image: "koenkk/zigbee2mqtt:latest"
     container_name: "zigbee2mqtt"
     restart: always
-    networks:
-      - openhabnet
+    privileged: true
     volumes:
       - "$HOME/zigbee2mqtt/data:/app/data"
       - "/run/udev:/run/udev:ro"
@@ -65,16 +60,11 @@ services:
     image: "carldebilly/zigbee2mqttassistant"
     container_name: "zigbee2mqttGUI"
     restart: always
-    networks:
-      - openhabnet
     ports:
       - 8880:80
     environment:
       - Z2MA_SETTINGS__MQTTSERVER=mosquitto
       - Z2MA_SETTINGS__MQTTUSERNAME=MQTT_user 
-      - Z2MA_SETTINGS__MQTTPASSWORD=xxxxx
+      - Z2MA_SETTINGS__MQTTPASSWORD=cevdevmqtt
 
-networks:
-  openhabnet:
-    driver: bridge
 
