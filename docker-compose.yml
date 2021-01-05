@@ -1,24 +1,24 @@
 #CURRENT_UID=$(id -u) CURRENT_GID=$(id -g) docker-compose up -d
-version: '3.3'
+version: '3'
 
 services:
-  domotics:
-   image: "ghcr.io/linuxserver/domoticz:latest"
-   container_name: "domoticz"
-   restart: always
-   ports: 
-     - 8080:8080
-     - 6144:6144
-     - 1443:1443
+  domoticz:
+    image: "linuxserver/domoticz:latest"
+    container_name: "domoticz"
+    restart: always
+    ports: 
+      - 8080:8080
+      - 6144:6144
+      - 1443:1443
     volumes:
-      - "$HOME/domoticz/config:/config"
+       - "$HOME/domoticz/config:/config"
     environment:
-      - PUID=${CURRENT_UID}
-      - GUID=${CURRENT_GID}
-      - TZ=${TZ}
-      - WEBROOT=domoticz #optional
+       - PUID=${CURRENT_UID}
+       - PGID=${CURRENT_GID}
+       - TZ=Europe/Paris
+       - WEBROOT=domoticz #optional
     devices:
-      /dev/serial0:/dev/serial0
+       - /dev/serial0:/dev/serial0
 
 
   mosquitto:
