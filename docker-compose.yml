@@ -6,6 +6,7 @@ services:
     image: "linuxserver/domoticz:latest"
     container_name: "domoticz"
     restart: always
+    privileged: true
     ports: 
       - 8080:8080
       - 6144:6144
@@ -16,7 +17,7 @@ services:
        - PUID=${CURRENT_UID}
        - PGID=${CURRENT_GID}
        - TZ=Europe/Paris
-       - WEBROOT=domoticz #optional
+       #- WEBROOT=domoticz #optional
     devices:
        - /dev/serial0:/dev/serial0
 
