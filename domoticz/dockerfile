@@ -1,23 +1,54 @@
-FROM linuxserver/domoticz:latest
+FROM navikey/raspbian-buster:latest
 
-
-# environment settings
-ARG DEBIAN_FRONTEND="noninteractive"
+ENV SSH_PASSWD="root:rootdocker!"
 ENV HOME="/config"
-ENV TZ=Europe/Paris
+
+RUN mkdir /app
+WORKDIR /app
+
+RUN export DEBIAN_FRONTEND=noninteractive \ 
+	&& apt-get update \
+	&& apt-get install -y --no-install-recommends ca-certificates dialog\
+	&& apt-get update \
+	&& apt-get install -y --no-install-recommends openssh-server \
+	&& echo "$SSH_PASSWD" | chpasswd \
+	&& apt-get install -y --no-install-recommends make gcc g++ libssl-dev git \
+		libcurl4-gnutls-dev libusb-dev python3-dev zlib1g-dev libcereal-dev liblua5.3-dev uthash-dev \
+	&& apt-get install -y --no-install-recommends python3-pip python3-dev \
+	&& cd /app \
+	&& pip3 install pyserial rpi.GPIO\
+	&& echo "******** build wiringPi ********" \
+	&& git clone https://github.com/WiringPi/WiringPi \
+	&& cd WiringPi \
+	&& ./build \
+	&& cd .. \
+	&& echo "******** build cmake ********" \
+	&& wget https://github.com/Kitware/CMake/releases/download/v3.17.0/cmake-3.17.0.tar.gz \
+	&& tar -xvf cmake-3.17.0.tar.gz \
+	&& cd cmake-3.17.0 \
+	&& ./bootstrap \
+	&& make \
+	&& make install \
+	&& cd .. \
+	&& rm -fr cmake-* \
+	&& cmake --version \
+	&& echo "******** build boost ********" \
+	&& apt remove --purge --auto-remove libboost-dev libboost-thread-dev libboost-system-dev  \
+		libboost-atomic-dev libboost-regex-dev libboost-chrono-dev \
+	&& mkdir boost \
+	&& cd boost \
+	&& wget https://dl.bintray.com/boostorg/release/1.74.0/source/boost_1_74_0.tar.gz \
+	&& tar xvf boost_1_74_0.tar.gz \
+	&& cd boost_1_74_0 \
+	&& ./boostrap.sh \
+	&& ./b2 stage threading=multi link=static --with-thread --with-system \
+	&& ./b2 install threading=multi link=static --with-thread --with-system \
+	&& rm -fr boost-* \
+	&& echo "******** build domoticz ********" \
+	&& usermod -aG dialout,gpio pi 
+ 
 
 
-RUN \
- echo "**** install runtime packages ****" && \
- apt-get update && \
- apt-get install -y --no-install-recommends --force-yes \
-	gcc \
-	python3-dev  \
-	wiringpi
 
-
-RUN \
- pip3 install rpi.GPIO && \
- usermod -aG gpio pi
 
 
