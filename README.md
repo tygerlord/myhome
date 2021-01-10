@@ -1,2 +1,2 @@
 # myhome
-Domoticz on raspberrypi with zigbee2mqtt and piZigate support
+Domoticz on raspberrypi with zigbee2MQTT and piZigate support
