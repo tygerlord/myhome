@@ -1,6 +1,8 @@
 #/bin/sh
 
 mkdir -p $HOME/domoticz/config
+mkdir -p $HOME/domoticz/plugins
+mkdir -p $HOME/domoticz/backups
 
 mkdir -p $HOME/mosquitto/config
 mkdir -p $HOME/mosquitto/log
