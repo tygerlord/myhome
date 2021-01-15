@@ -3,7 +3,7 @@ version: '3'
 
 services:
   domoticz:
-    image: "linuxserver/domoticz:latest"
+    image: "tygerlord/domoticz:latest"
     container_name: "domoticz"
     restart: always
     privileged: true
