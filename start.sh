@@ -1,13 +1,17 @@
-#/bin/sh
+#/bin/bash
 
-mkdir -p $HOME/domoticz/config
-mkdir -p $HOME/domoticz/plugins
-mkdir -p $HOME/domoticz/backups
+START_FROM_DIR=$(pwd)
 
-mkdir -p $HOME/mosquitto/config
-mkdir -p $HOME/mosquitto/log
-mkdir -p $HOME/mosquitto/data
+echo $START_FROM_DIR
 
-mkdir -p $HOME/zigbee2mqtt/data
+mkdir -p $START_FROM_DIR/domoticz/config
+mkdir -p $START_FROM_DIR/domoticz/plugins
+mkdir -p $START_FROM_DIR/domoticz/backups
 
-CURRENT_UID=1000 CURRENT_GID=1000 docker-compose up -d
+mkdir -p $START_FROM_DIR/mosquitto/config
+mkdir -p $START_FROM_DIR/mosquitto/log
+mkdir -p $START_FROM_DIR/mosquitto/data
+
+mkdir -p $START_FROM_DIR/zigbee2mqtt/data
+
+CURRENT_UID=1000 CURRENT_GID=1000 START_FROM_DIR=$START_FROM_DIR docker-compose up -d
