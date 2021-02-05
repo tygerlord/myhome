@@ -10,6 +10,8 @@ I would like a complete install from one source
 # How
 
  - require a raspberry pi with docker compose installed
+ - clone this repository git clone https://github.com/tygerlord/myhome
+ - cd myhome and run ./start.sh
 
 # Next
 
