@@ -7,6 +7,8 @@ services:
     container_name: "domoticz"
     restart: always
     privileged: true
+    depends_on:
+      - zigbee2mqttGUI
     ports: 
       - 8080:8080
       - 6144:6144
@@ -64,5 +66,16 @@ services:
       - Z2MA_SETTINGS__MQTTSERVER=mosquitto
       - Z2MA_SETTINGS__MQTTUSERNAME=MQTT_user 
       - Z2MA_SETTINGS__MQTTPASSWORD=cevdevmqtt
+
+  lighttpd:
+    image: "sebp/lighttpd"
+    restart: always
+    volumes:
+      - $START_FROM_DIR/lighttpd/htdocs:/var/www/localhost/htdocs
+      - $START_FROM_DIR/lighttpd/etc/lighttpd:/etc/lighttpd
+    ports:
+      - 9090:9090
+      - 9091:9091
+    tty: true
 
 
