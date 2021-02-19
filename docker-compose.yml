@@ -1,12 +1,12 @@
 #CURRENT_UID=$(id -u) CURRENT_GID=$(id -g) docker-compose up -d
-version: '3'
+version: '3.3'
 
 services:
   domoticz:
     image: "tygerlord/domoticz:latest"
-    container_name: "domoticz"
     restart: always
     privileged: true
+    command: -wwwroot /config/www2 
     depends_on:
       - zigbee2mqttGUI
     ports: 
@@ -68,14 +68,15 @@ services:
       - Z2MA_SETTINGS__MQTTPASSWORD=cevdevmqtt
 
   lighttpd:
-    image: "sebp/lighttpd"
+    image: "tygerlord/lighttpd"
     restart: always
     volumes:
+      - /etc/timezone:/etc/timezone
       - $START_FROM_DIR/lighttpd/htdocs:/var/www/localhost/htdocs
       - $START_FROM_DIR/lighttpd/etc/lighttpd:/etc/lighttpd
+      - $START_FROM_DIR/lighttpd/etc/letsencrypt:/etc/letsencrypt
     ports:
       - 9090:9090
       - 9091:9091
     tty: true
-
 
