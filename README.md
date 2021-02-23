@@ -1,11 +1,12 @@
 # Myhome
+  
+All in one docker image [~~Domoticz~~](www.domoticz.com) [Home Assistant](https://www.home-assistant.io/) for raspberrypi with [zigbee2MQTT](https://www.zigbee2mqtt.io/) and [Zigate](https://zigate.fr/) support
 
-All in one docker image [Domoticz](www.domoticz.com) for raspberrypi with [zigbee2MQTT](https://www.zigbee2mqtt.io/) and [Zigate](https://zigate.fr/) support
-
+currently migrating to Home-Assistant
 
 # Why
 
-I would like a complete install from one source  
+I would like a complete install from one source
 
 # How
 
@@ -15,5 +16,4 @@ I would like a complete install from one source
 
 # Next
 
- - include web frontend and signed certificate with certbot
- 
+ - 
