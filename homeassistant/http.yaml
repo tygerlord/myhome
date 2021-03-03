@@ -1,3 +1,0 @@
-  ssl_certificate: /config/cert.pem
-  ssl_key: /config/key.pem
-

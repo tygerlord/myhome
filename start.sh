@@ -1,17 +1,12 @@
 #/bin/bash
 
-START_FROM_DIR=$(pwd)
+mkdir -p ./homeassistant
 
-echo $START_FROM_DIR
+mkdir -p ./mosquitto/config
+mkdir -p ./mosquitto/log
+mkdir -p ./mosquitto/data
 
-mkdir -p $START_FROM_DIR/domoticz/config
-mkdir -p $START_FROM_DIR/domoticz/plugins
-mkdir -p $START_FROM_DIR/domoticz/backups
+mkdir -p ./zigbee2mqtt/data
 
-mkdir -p $START_FROM_DIR/mosquitto/config
-mkdir -p $START_FROM_DIR/mosquitto/log
-mkdir -p $START_FROM_DIR/mosquitto/data
+docker-compose up -d --remove-orphans $@
 
-mkdir -p $START_FROM_DIR/zigbee2mqtt/data
-
-CURRENT_UID=1000 CURRENT_GID=1000 START_FROM_DIR=$START_FROM_DIR docker-compose up -d
