@@ -4,7 +4,6 @@ version: '3.3'
 services:
   homeassistant:
     image: "homeassistant/raspberrypi3-homeassistant:stable"
-#    build: docker-pi3-homeassistant
     container_name: "homeassistant"
     restart: unless-stopped
     privileged: true
@@ -18,6 +17,13 @@ services:
       - "/etc/localtime:/etc/localtime:ro"
     environment:
       - "DISABLE_JEMALLOC=1"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.homeassistant.rule=Host(`${MYHOME_TRAEFIK_DOMAIN}`)"
+      - "traefik.http.routers.homeassistant.entrypoints=https"
+      - "traefik.http.routers.homeassistant.tls=true"
+      - "traefik.http.routers.homeassistant.tls.certresolver=myhomeresolver"
+      - "traefik.http.services.homeassistant.loadbalancer.server.port=8123"
 
   mosquitto:
     image: "eclipse-mosquitto:latest"
@@ -57,9 +63,56 @@ services:
     container_name: "zigbee2mqttGUI"
     restart: unless-stopped
     ports:
-      - 8880:80
+      - "8880:8880"
     environment:
-      - Z2MA_SETTINGS__MQTTSERVER=mosquitto
-      - Z2MA_SETTINGS__MQTTUSERNAME=MQTT_user 
-      - Z2MA_SETTINGS__MQTTPASSWORD=mqtt_secret
+      - "ASPNETCORE_URLS=http://*:8880"
+      - "Z2MA_SETTINGS__MQTTSERVER=mosquitto"
+      - "Z2MA_SETTINGS__MQTTUSERNAME=MQTT_user"
+      - "Z2MA_SETTINGS__MQTTPASSWORD=mqtt_secret"
+
+  tools:
+    build: tools
+    container_name: tools
+    restart: unless-stopped
+    volumes:
+      - "/etc/timezone:/etc/timezone:ro"
+      - ".:/home/pi/myhome"
+    ports:
+      - "4200:4200"
+ 
+  reverse-proxy:
+    image: traefik:latest
+    restart: unless-stopped
+    container_name: reverse_proxy
+#    command: --configFile=/etc/traefik/traefik.yml --api.insecure=true --providers.docker
+    ports: 
+      - "443:443"
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+#     - "./traefik/traefik.yml:/etc/traefik/traefik.yml"
+      - "./traefik/acme:/etc/traefik/acme"
+    environment:
+     - "TRAEFIK_ACCESSLOG=true"
+     - "TRAEFIK_ACCESSLOG_FIELDS_DEFAULTMODE=keep"
+     - "TRAEFIK_ACCESSLOG_FIELDS_HEADERS_DEFAULTMODE=keep"
+     - "TRAEFIK_ENTRYPOINTS_HTTP=true"
+     - "TRAEFIK_ENTRYPOINTS_HTTP_ADDRESS=:80"
+     - "TRAEFIK_ENTRYPOINTS_HTTPS=true"
+     - "TRAEFIK_ENTRYPOINTS_HTTPS_ADDRESS=:443"
+     - "TRAEFIK_PROVIDERS_DOCKER=true"
+     - "TRAEFIK_API=true"
+     - "TRAEFIK_API_INSECURE=true"
+     - "TRAEFIK_CERTIFICATESRESOLVERS_MYHOMERESOLVER=true"
+     - "TRAEFIK_CERTIFICATESRESOLVERS_MYHOMERESOLVER_ACME_EMAIL=${MYHOME_EMAIL}"
+     - "TRAEFIK_CERTIFICATESRESOLVERS_MYHOMERESOLVER_ACME_STORAGE=acme.json"
+     - "TRAEFIK_CERTIFICATESRESOLVERS_MYHOMERESOLVER_ACME_HTTPCHALLENGE_ENTRYPOINT=http"
+
+    labels:
+      - "traefik.http.routers.api.rule=PathPrefix(`/api`)||PathPrefix(`/dashboard`)"
+      - "traefik.http.routers.api.service=api@internal"
+      - "traefik.http.routers.api.entrypoints=http"
+      - "traefik.http.routers.api.middlewares=auth"
+      - "traefik.http.middlewares.auth.basicauth.users=${MYHOME_TRAEFIK_USER}"
 
