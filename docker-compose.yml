@@ -76,22 +76,31 @@ services:
     restart: unless-stopped
     volumes:
       - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/watchdog.conf:/etc/watchdog.conf"
       - ".:/home/pi/myhome"
     ports:
       - "4200:4200"
+    environment:
+      - "USER_PI_PASSWORD=${MYHOME_TOOLS_USER_PI_PASSWORD}"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.shellinabox.rule=Host(`${MYHOME_TRAEFIK_DOMAIN}`)&&PathPrefix(`/shellinabox`)"
+      - "traefik.http.routers.shellinabox.entrypoints=https"
+      - "traefik.http.routers.shellinabox.tls=true"
+      - "traefik.http.routers.shellinabox.tls.certresolver=myhomeresolver"
+      - "traefik.http.services.shellinabox.loadbalancer.server.port=4200"
+
  
   reverse-proxy:
     image: traefik:latest
     restart: unless-stopped
     container_name: reverse_proxy
-#    command: --configFile=/etc/traefik/traefik.yml --api.insecure=true --providers.docker
     ports: 
       - "443:443"
       - "80:80"
       - "8080:8080"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
-#     - "./traefik/traefik.yml:/etc/traefik/traefik.yml"
       - "./traefik/acme:/etc/traefik/acme"
     environment:
      - "TRAEFIK_ACCESSLOG=true"
@@ -106,9 +115,8 @@ services:
      - "TRAEFIK_API_INSECURE=true"
      - "TRAEFIK_CERTIFICATESRESOLVERS_MYHOMERESOLVER=true"
      - "TRAEFIK_CERTIFICATESRESOLVERS_MYHOMERESOLVER_ACME_EMAIL=${MYHOME_EMAIL}"
-     - "TRAEFIK_CERTIFICATESRESOLVERS_MYHOMERESOLVER_ACME_STORAGE=acme.json"
+     - "TRAEFIK_CERTIFICATESRESOLVERS_MYHOMERESOLVER_ACME_STORAGE=/etc/traefik/acme.json"
      - "TRAEFIK_CERTIFICATESRESOLVERS_MYHOMERESOLVER_ACME_HTTPCHALLENGE_ENTRYPOINT=http"
-
     labels:
       - "traefik.http.routers.api.rule=PathPrefix(`/api`)||PathPrefix(`/dashboard`)"
       - "traefik.http.routers.api.service=api@internal"
