@@ -12,11 +12,15 @@ services:
     depends_on:
       - zigbee2mqttGUI
     volumes:
-      - "./homeassistant:/config"
-      - "./homeassistant/etc/letsencrypt:/etc/letsencrypt"
       - "/etc/localtime:/etc/localtime:ro"
+      - "./homeassistant:/config"
+      - "./homeassistant/docker/run:/etc/service.d/homeassistant/run"
     environment:
       - "DISABLE_JEMALLOC=1"
+      - "PUID=1000"
+      - "GUID=1000"
+      - "UMASK=002"
+      - "PACKAGES=iputils"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.homeassistant.rule=Host(`${MYHOME_TRAEFIK_DOMAIN}`)"
@@ -62,18 +66,29 @@ services:
     image: "carldebilly/zigbee2mqttassistant"
     container_name: "zigbee2mqttGUI"
     restart: unless-stopped
+    depends_on:
+      - reverse-proxy
     ports:
       - "8880:8880"
     environment:
       - "ASPNETCORE_URLS=http://*:8880"
       - "Z2MA_SETTINGS__MQTTSERVER=mosquitto"
-      - "Z2MA_SETTINGS__MQTTUSERNAME=MQTT_user"
-      - "Z2MA_SETTINGS__MQTTPASSWORD=mqtt_secret"
+      - "Z2MA_SETTINGS__MQTTUSERNAME=${MYHOME_Z2MA_SETTINGS__MQTTUSERNAME}"
+      - "Z2MA_SETTINGS__MQTTPASSWORD=${MYHOME_Z2MA_SETTINGS__MQTTPASSWORD}"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.zigbee2mqttgui.rule=Host(`${MYHOME_TRAEFIK_DOMAIN}`)&&PathPrefix(`/zigbee2mqttgui`)"
+      - "traefik.http.routers.zigbee2mqttgui.entrypoints=https"
+      - "traefik.http.routers.zigbee2mqttgui.tls=true"
+      - "traefik.http.routers.zigbee2mqttgui.tls.certresolver=myhomeresolver"
+      - "traefik.http.services.zigbee2mqttgui.loadbalancer.server.port=1880"
 
   tools:
     build: tools
     container_name: tools
     restart: unless-stopped
+    depends_on:
+      - reverse-proxy
     volumes:
       - "/etc/timezone:/etc/timezone:ro"
       - "/etc/watchdog.conf:/etc/watchdog.conf"
@@ -90,6 +105,26 @@ services:
       - "traefik.http.routers.shellinabox.tls.certresolver=myhomeresolver"
       - "traefik.http.services.shellinabox.loadbalancer.server.port=4200"
 
+  nodered:
+    image: nodered/node-red
+    container_name: nodered
+    restart: unless-stopped
+    depends_on:
+      - reverse-proxy
+    volumes:
+      - "/etc/timezone:/etc/timezone:ro"
+      - "./nodered:/data"
+    ports:
+      - "1880:1880"
+    environment:
+      - "NODERED_ACCESS_TOKEN=${MYHOME_NODERED_ACCESS_TOKEN}"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nodered.rule=Host(`${MYHOME_TRAEFIK_DOMAIN}`)&&PathPrefix(`/nodered`)"
+      - "traefik.http.routers.nodered.entrypoints=https"
+      - "traefik.http.routers.nodered.tls=true"
+      - "traefik.http.routers.nodered.tls.certresolver=myhomeresolver"
+      - "traefik.http.services.nodered.loadbalancer.server.port=1880"
  
   reverse-proxy:
     image: traefik:latest
@@ -115,7 +150,7 @@ services:
      - "TRAEFIK_API_INSECURE=true"
      - "TRAEFIK_CERTIFICATESRESOLVERS_MYHOMERESOLVER=true"
      - "TRAEFIK_CERTIFICATESRESOLVERS_MYHOMERESOLVER_ACME_EMAIL=${MYHOME_EMAIL}"
-     - "TRAEFIK_CERTIFICATESRESOLVERS_MYHOMERESOLVER_ACME_STORAGE=/etc/traefik/acme.json"
+     - "TRAEFIK_CERTIFICATESRESOLVERS_MYHOMERESOLVER_ACME_STORAGE=/etc/traefik/acme/acme.json"
      - "TRAEFIK_CERTIFICATESRESOLVERS_MYHOMERESOLVER_ACME_HTTPCHALLENGE_ENTRYPOINT=http"
     labels:
       - "traefik.http.routers.api.rule=PathPrefix(`/api`)||PathPrefix(`/dashboard`)"
