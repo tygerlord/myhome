@@ -55,12 +55,14 @@ services:
     restart: unless-stopped
     privileged: true
     volumes:
+      - "/etc/localtime:/etc/localtime:ro"
       - "./zigbee2mqtt/data:/app/data"
       - "/run/udev:/run/udev:ro"
     devices: 
       - "/dev/ttyACM0:/dev/ttyACM0"
     environment:
-      - TZ=Europe/Paris
+      - "ZIGBEE2MQTT_CONFIG_MQTT_USER=${MYHOME_Z2MA_SETTINGS__MQTTUSERNAME}"
+      - "ZIGBEE2MQTT_CONFIG_MQTT_PASSWORD=${MYHOME_Z2MA_SETTINGS__MQTTPASSWORD}"
   
   zigbee2mqttGUI:
     depends_on:
@@ -145,7 +147,7 @@ services:
       - "./traefik/acme:/etc/traefik/acme"
     environment:
      - "TRAEFIK_ACCESSLOG=false"
-     - "TRAEFIK_LOG_LEVEL=debug"  
+     - "TRAEFIK_LOG_LEVEL=error"  
      - "TRAEFIK_ACCESSLOG_FIELDS_DEFAULTMODE=keep"
      - "TRAEFIK_ACCESSLOG_FIELDS_HEADERS_DEFAULTMODE=keep"
      - "TRAEFIK_ENTRYPOINTS_HTTP=true"
