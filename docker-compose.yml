@@ -3,14 +3,15 @@ version: '3.3'
 
 services:
   homeassistant:
-    image: "homeassistant/raspberrypi3-homeassistant:stable"
+          #image: "homeassistant/raspberrypi3-homeassistant:stable"
+    image: "homeassistant/home-assistant:stable"
     container_name: "homeassistant"
     restart: unless-stopped
     privileged: true
     ports:
       - 8123:8123
     depends_on:
-      - zigbee2mqttGUI
+      - mosquitto
     volumes:
       - "/etc/localtime:/etc/localtime:ro"
       - "./homeassistant:/config"
@@ -28,6 +29,7 @@ services:
       - "traefik.http.routers.homeassistant.tls=true"
       - "traefik.http.routers.homeassistant.tls.certresolver=myhomeresolver"
       - "traefik.http.services.homeassistant.loadbalancer.server.port=8123"
+
 
   mosquitto:
     image: "eclipse-mosquitto:latest"
@@ -66,8 +68,6 @@ services:
     image: "carldebilly/zigbee2mqttassistant"
     container_name: "zigbee2mqttGUI"
     restart: unless-stopped
-    depends_on:
-      - reverse-proxy
     ports:
       - "8880:8880"
     environment:
@@ -76,7 +76,7 @@ services:
       - "Z2MA_SETTINGS__MQTTUSERNAME=${MYHOME_Z2MA_SETTINGS__MQTTUSERNAME}"
       - "Z2MA_SETTINGS__MQTTPASSWORD=${MYHOME_Z2MA_SETTINGS__MQTTPASSWORD}"
     labels:
-      - "traefik.enable=true"
+      - "traefik.enable=false"
       - "traefik.http.routers.zigbee2mqttgui.rule=Host(`${MYHOME_TRAEFIK_DOMAIN}`)&&PathPrefix(`/zigbee2mqttgui`)"
       - "traefik.http.routers.zigbee2mqttgui.entrypoints=https"
       - "traefik.http.routers.zigbee2mqttgui.tls=true"
@@ -103,6 +103,7 @@ services:
       - "traefik.http.routers.shellinabox.entrypoints=https"
       - "traefik.http.routers.shellinabox.tls=true"
       - "traefik.http.routers.shellinabox.tls.certresolver=myhomeresolver"
+      - "traefik.http.routers.shellinbox.middlewares=authelia"
       - "traefik.http.services.shellinabox.loadbalancer.server.port=4200"
 
   nodered:
@@ -124,12 +125,17 @@ services:
       - "traefik.http.routers.nodered.entrypoints=https"
       - "traefik.http.routers.nodered.tls=true"
       - "traefik.http.routers.nodered.tls.certresolver=myhomeresolver"
+        # - "traefik.http.routers.nodered.middlewares=authelia"
+      - "traefik.http.middlewares.nodered.forwardauth.address=https://${MYHOME_TRAEFIK_DOMAIN}/authelia"
       - "traefik.http.services.nodered.loadbalancer.server.port=1880"
+
  
   reverse-proxy:
     image: traefik:latest
     restart: unless-stopped
     container_name: reverse_proxy
+    depends_on:
+      - authelia
     ports: 
       - "443:443"
       - "80:80"
@@ -138,7 +144,8 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock"
       - "./traefik/acme:/etc/traefik/acme"
     environment:
-     - "TRAEFIK_ACCESSLOG=true"
+     - "TRAEFIK_ACCESSLOG=false"
+     - "TRAEFIK_LOG_LEVEL=debug"  
      - "TRAEFIK_ACCESSLOG_FIELDS_DEFAULTMODE=keep"
      - "TRAEFIK_ACCESSLOG_FIELDS_HEADERS_DEFAULTMODE=keep"
      - "TRAEFIK_ENTRYPOINTS_HTTP=true"
@@ -146,16 +153,70 @@ services:
      - "TRAEFIK_ENTRYPOINTS_HTTPS=true"
      - "TRAEFIK_ENTRYPOINTS_HTTPS_ADDRESS=:443"
      - "TRAEFIK_PROVIDERS_DOCKER=true"
-     - "TRAEFIK_API=true"
+     - "TRAEFIK_PROVIDERS_DOCKER_EXPOSEDBYDEFAULT=false"
+     - "TRAEFIK_API=false"
      - "TRAEFIK_API_INSECURE=true"
      - "TRAEFIK_CERTIFICATESRESOLVERS_MYHOMERESOLVER=true"
      - "TRAEFIK_CERTIFICATESRESOLVERS_MYHOMERESOLVER_ACME_EMAIL=${MYHOME_EMAIL}"
      - "TRAEFIK_CERTIFICATESRESOLVERS_MYHOMERESOLVER_ACME_STORAGE=/etc/traefik/acme/acme.json"
      - "TRAEFIK_CERTIFICATESRESOLVERS_MYHOMERESOLVER_ACME_HTTPCHALLENGE_ENTRYPOINT=http"
     labels:
+      - "traefik.enable=false"
       - "traefik.http.routers.api.rule=PathPrefix(`/api`)||PathPrefix(`/dashboard`)"
       - "traefik.http.routers.api.service=api@internal"
       - "traefik.http.routers.api.entrypoints=http"
-      - "traefik.http.routers.api.middlewares=auth"
-      - "traefik.http.middlewares.auth.basicauth.users=${MYHOME_TRAEFIK_USER}"
+      - "traefik.http.services.api.loadbalancer.server.port=80"
+      - "traefik.http.middlewares.authelia.forwardauth.address=http://authelia:9091/api/verify?rd=https://${MYHOME_TRAEFIK_DOMAIN}/authelia"
+      - "traefik.http.middlewares.authelia.forwardauth.trustForwardHeader=true"
+      - "traefik.http.middlewares.authelia.forwardauth.authResponseHeaders=Remote-User, Remote-Groups, Remote-Name, Remote-Email"
+        #- "traefik.http.routers.api.middlewares=auth"
+        #      - "traefik.http.middlewares.auth.basicauth.users=${MYHOME_TRAEFIK_USER}"
+
+  authelia:
+    image: authelia/authelia
+    container_name: authelia
+    restart: unless-stopped
+    depends_on:
+      - redis
+    volumes:
+      - "/etc/timezone:/etc/timezone:ro"
+      - "./authelia:/config"
+    ports:
+      - "9091:9091"
+    environment:
+      - "PUID=1000"
+      - "GUID=1000"
+      - "AUTHELIA_JWT_SECRET=${MYHOME_AUTHELIA_JWT_SECRET}"
+      - "AUTHELIA_SESSION_SECRET=${MYHOME_AUTHELIA_SESSION_SECRET}"
+      - "AUTHELIA_SESSION_REDIS_PASSWORD=${MYHOME_AUTHELIA_SESSION_REDIS_PASSWORD}"
+      - "AUTHELIA_NOTIFIER_SMTP_PASSWORD=${MYHOME_AUTHELIA_NOTIFIER_SMTP_PASSWORD}"
+      - "AUTHELIA_SMTP_HOST=${MYHOME_AUTHELIA_SMTP_HOST}"  
+      - "AUTHELIA_SMTP_SENDER=${MYHOME_AUTHELIA_SMTP_SENDER}"  
+      - "AUTHELIA_DOMAIN=${MYHOME_TRAEFIK_DOMAIN}"  
+      - "AUTHELIA_DEFAULT_REDIRECTION_URL=${MYHOME_AUTHELIA_DEFAULT_REDIRECTION_URL}"  
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.authelia.rule=Host(`${MYHOME_TRAEFIK_DOMAIN}`)&&PathPrefix(`/authelia`)"
+      - "traefik.http.routers.authelia.entrypoints=https"
+      - "traefik.http.routers.authelia.tls=true"
+      - "traefik.http.routers.authelia.tls.certresolver=myhomeresolver"
+        #- "traefik.http.middlewares.authelia.forwardauth.address=http://authelia:9091/api/verify?rd=https://${MYHOME_TRAEFIK_DOMAIN}/authelia"
+        #- "traefik.http.middlewares.authelia.forwardauth.trustForwardHeader=true"
+        #- "traefik.http.middlewares.authelia.forwardauth.authResponseHeaders=Remote-User, Remote-Groups, Remote-Name, Remote-Email"
+        #- "traefik.http.middlewares.authelia-basic.forwardauth.address=http://authelia:9091/api/verify?auth=basic"
+        #- "traefik.http.middlewares.authelia-basic.forwardauth.trustForwardHeader=true"
+        #- "traefik.http.middlewares.authelia-basic.forwardauth.authResponseHeaders=Remote-User, Remote-Groups, Remote-Name, Remote-Email"
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    restart: unless-stopped
+    volumes:
+      - "/etc/timezone:/etc/timezone:ro"
+      - "./redis:/data"
+    ports:
+      - "6379:6379"
+    environment:
+      - "PUID=1000"
+      - "GUID=1000"
 

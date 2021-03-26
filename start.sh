@@ -26,5 +26,9 @@ mkdir -p ./zigbee2mqtt/data
 
 mkdir -p ./nodered
 
+mkdir -p ./redis
+
+mkdir -p ./authelia
+
 docker-compose up -d --remove-orphans $@
 
