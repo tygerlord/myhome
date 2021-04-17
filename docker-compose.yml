@@ -47,44 +47,6 @@ services:
     environment:
       - TZ=Europe/Paris
 
-  zigbee2mqtt:
-    depends_on:
-      - mosquitto
-    image: "koenkk/zigbee2mqtt:latest"
-    container_name: "zigbee2mqtt"
-    restart: unless-stopped
-    privileged: true
-    volumes:
-      - "/etc/localtime:/etc/localtime:ro"
-      - "./zigbee2mqtt/data:/app/data"
-      - "/run/udev:/run/udev:ro"
-    devices: 
-      - "/dev/ttyACM0:/dev/ttyACM0"
-    environment:
-      - "ZIGBEE2MQTT_CONFIG_MQTT_USER=${MYHOME_Z2MA_SETTINGS__MQTTUSERNAME}"
-      - "ZIGBEE2MQTT_CONFIG_MQTT_PASSWORD=${MYHOME_Z2MA_SETTINGS__MQTTPASSWORD}"
-  
-  zigbee2mqttGUI:
-    depends_on:
-      - zigbee2mqtt
-    image: "carldebilly/zigbee2mqttassistant"
-    container_name: "zigbee2mqttGUI"
-    restart: unless-stopped
-    ports:
-      - "8880:8880"
-    environment:
-      - "ASPNETCORE_URLS=http://*:8880"
-      - "Z2MA_SETTINGS__MQTTSERVER=mosquitto"
-      - "Z2MA_SETTINGS__MQTTUSERNAME=${MYHOME_Z2MA_SETTINGS__MQTTUSERNAME}"
-      - "Z2MA_SETTINGS__MQTTPASSWORD=${MYHOME_Z2MA_SETTINGS__MQTTPASSWORD}"
-    labels:
-      - "traefik.enable=false"
-      - "traefik.http.routers.zigbee2mqttgui.rule=Host(`${MYHOME_TRAEFIK_DOMAIN}`)&&PathPrefix(`/zigbee2mqttgui`)"
-      - "traefik.http.routers.zigbee2mqttgui.entrypoints=https"
-      - "traefik.http.routers.zigbee2mqttgui.tls=true"
-      - "traefik.http.routers.zigbee2mqttgui.tls.certresolver=myhomeresolver"
-      - "traefik.http.services.zigbee2mqttgui.loadbalancer.server.port=1880"
-
   tools:
     build: tools
     container_name: tools
