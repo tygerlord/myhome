@@ -21,6 +21,11 @@ RUN export DEBIAN_FRONTEND=noninteractive \
 		&& apt-get install -y --no-install-recommends cron \
 		&& apt-get install -y --no-install-recommends rsync \
 		&& apt-get install -y --no-install-recommends rclone \
+		&& apt-get install -y --no-install-recommends avahi-daemon \
+		&& apt-get install -y --no-install-recommends avahi-utils \
+		&& apt-get install -y --no-install-recommends avahi-discover \
+		&& apt-get install -y --no-install-recommends libnss-mdns \
+		&& apt-get install -y --no-install-recommends iputils-ping \
 		&& useradd pi --create-home \
 		&& echo "$SSH_USER_PASSWD" | chpasswd  
 

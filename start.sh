@@ -22,7 +22,7 @@ mkdir -p ./mosquitto/config
 mkdir -p ./mosquitto/log
 mkdir -p ./mosquitto/data
 
-mkdir -p ./zigbee2mqtt/data
+mkdir -p ./esphome
 
 mkdir -p ./nodered
 
