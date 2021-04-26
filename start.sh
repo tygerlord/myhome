@@ -18,17 +18,11 @@ source myhome_env.sh || Help
 
 mkdir -p ./homeassistant
 
-mkdir -p ./mosquitto/config
-mkdir -p ./mosquitto/log
-mkdir -p ./mosquitto/data
+mkdir -p ./homeassistant/myhome/esphome
 
-mkdir -p ./esphome
+mkdir -p ./homeassistant/myhome/nodered
 
-mkdir -p ./nodered
-
-mkdir -p ./redis
-
-mkdir -p ./authelia
+mkdir -p ./traefik
 
 docker-compose up -d --remove-orphans $@
 
