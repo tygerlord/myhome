@@ -22,7 +22,13 @@ mkdir -p ./homeassistant/myhome/esphome
 
 mkdir -p ./homeassistant/myhome/nodered
 
+mkdir -p ./homeassistant/myhome/rhasspy
+
+mkdir -p ./homeassistant/myhome/rasa
+
 mkdir -p ./traefik
+
+truncate -s 0 ./homeassistant/home-assistant.log
 
 docker-compose up -d --remove-orphans $@
 
