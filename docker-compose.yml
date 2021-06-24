@@ -37,6 +37,7 @@ services:
     user: "1000:1000"
     ports:
       - "12101:12101"
+      - "12183:12183"
     volumes:
       - "/etc/timezone:/etc/timezone:ro"
       - "./homeassistant/myhome/rhasspy:/profiles"
@@ -118,7 +119,53 @@ services:
       - "traefik.http.routers.nodered.tls.certresolver=myhomeresolver"
       - "traefik.http.services.nodered.loadbalancer.server.port=1880"
 
+  duplicati:
+    image: ghcr.io/linuxserver/duplicati
+    container_name: duplicati
+    restart: unless-stopped 
+    ports:
+      - 8200:8200
+    volumes:
+      - "/etc/timezone:/etc/timezone:ro"
+      - "./homeassistant/myhome/duplicati/config:/config"
+      - "./homeassistant/myhome/duplicati/backups:/backups"
+      - "$HOME:/source"
+    environment:
+#     - PUID=1000
+#     - PGID=1000
+#     - TZ=Europe/Paris
+#     - CLI_ARGS= #optional
  
+  mosquitto:
+    image: "eclipse-mosquitto:latest"
+    container_name: "mosquitto"
+    user: "${CURRENT_UID}:${CURRENT_GID}"
+    restart: unless-stopped 
+    ports:
+      - 1883:1883
+      - 8883:8883
+      - 9001:9001
+    volumes:
+      - "/etc/timezone:/etc/timezone:ro"
+      - "./homeassistant/myhome/mosquitto/config:/mosquitto/config"
+      - "./homeassistant/myhome/mosquitto/log:/mosquitto/log"
+      - "./homeassistant/myhome/mosquitto/data:/mosquitto/data"
+
+  zigbee2mqttGUI:
+    depends_on:
+      - mosquitto
+    image: "carldebilly/zigbee2mqttassistant"
+    container_name: "zigbee2mqttGUI"
+    restart: unless-stopped 
+    ports:
+      - 8880:80
+    volumes:
+      - "/etc/timezone:/etc/timezone:ro"
+    environment:
+      - "Z2MA_SETTINGS__MQTTSERVER=mosquitto"
+      - "Z2MA_SETTINGS__MQTTUSERNAME=${MQTT_USER}" 
+      - "Z2MA_SETTINGS__MQTTPASSWORD=${MQTT_PASSWORD}"
+
   reverse-proxy:
     image: traefik:latest
     restart: unless-stopped

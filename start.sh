@@ -28,6 +28,9 @@ mkdir -p ./homeassistant/myhome/rasa
 
 mkdir -p ./traefik
 
+mkdir -p ./homeassistant/myhome/duplicati/config
+mkdir -p ./homeassistant/myhome/duplicati/backups
+
 truncate -s 0 ./homeassistant/home-assistant.log
 
 docker-compose up -d --remove-orphans $@
