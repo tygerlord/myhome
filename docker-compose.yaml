@@ -24,7 +24,7 @@ services:
       - "PACKAGES=iputils"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.homeassistant.rule=Host(`${MYHOME_TRAEFIK_DOMAIN}`)"
+      - "traefik.http.routers.homeassistant.rule=Host(`${TRAEFIK_DOMAIN}`)"
       - "traefik.http.routers.homeassistant.entrypoints=https"
       - "traefik.http.routers.homeassistant.tls=true"
       - "traefik.http.routers.homeassistant.tls.certresolver=myhomeresolver"
@@ -34,28 +34,30 @@ services:
     image: "rhasspy/rhasspy"
     container_name: "rhasspy"
     restart: unless-stopped
-    user: "1000:1000"
+    user: "${CURRENT_UID}:${CURRENT_GID}"
     ports:
       - "12101:12101"
       - "12183:12183"
     volumes:
       - "/etc/timezone:/etc/timezone:ro"
-      - "./homeassistant/myhome/rhasspy:/profiles"
-    command: "--user-profiles /profiles --profile ${MYHOME_RHASSPY_PROFILE}"
+      - "./rhasspy:/profiles"
+    command: "--user-profiles /profiles --profile ${RHASSPY_PROFILE}"
+    environment:
+      - "TZ=${TZ}"      
+
 
   esphome:
     image: "esphome/esphome"
     container_name: "esphome"
-    user: "1000:1000"
+    user: "${CURRENT_UID}:${CURRENT_GID}"
     restart: unless-stopped
     network_mode: host
-#   ports:
-#     - 6052:6052
     volumes:
-      - "./homeassistant/myhome/esphome:/config"
-      - "./homeassistant/myhome/esphome/.platformio:/.platformio"
+      - "/etc/timezone:/etc/timezone:ro"
+      - "./esphome:/config"
+      - "./esphome/.platformio:/.platformio"
     environment:
-      - "TZ=${MYHOME_TZ}"        
+      - "TZ=${TZ}"      
       - "ESPHOME_DASHBOARD_USE_PING=true" 
 
 
@@ -68,7 +70,7 @@ services:
 #   ports:
 #     - 5005:5005
 #   volumes:
-#     - "./homeassistant/myhome/rasa:/app"
+#     - "./rasa:/app"
 #   environment:
 #     - "/etc/localtime:/etc/localtime:ro"
 
@@ -77,6 +79,7 @@ services:
     build: tools
     container_name: tools
     restart: unless-stopped
+    user: "${CURRENT_UID}:${CURRENT_GID}"
     depends_on:
       - homeassistant
     volumes:
@@ -86,11 +89,10 @@ services:
     ports:
       - "4200:4200"
     environment:
-      - "TZ=${MYHOME_TZ}"        
-      - "USER_PI_PASSWORD=${MYHOME_TOOLS_USER_PI_PASSWORD}"
+      - "USER_PI_PASSWORD=${TOOLS_USER_PI_PASSWORD}"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.shellinabox.rule=Host(`${MYHOME_TRAEFIK_DOMAIN}`)&&PathPrefix(`/shellinabox`)"
+      - "traefik.http.routers.shellinabox.rule=Host(`${TRAEFIK_DOMAIN}`)&&PathPrefix(`/shellinabox`)"
       - "traefik.http.routers.shellinabox.entrypoints=https"
       - "traefik.http.routers.shellinabox.tls=true"
       - "traefik.http.routers.shellinabox.tls.certresolver=myhomeresolver"
@@ -104,16 +106,16 @@ services:
       - homeassistant
     volumes:
       - "/etc/timezone:/etc/timezone:ro"
-      - "./homeassistant/myhome/nodered:/data"
+      - "./nodered:/data"
       - ".:/data/myhome"
     ports:
       - "1880:1880"
     environment:
-      - "TZ=${MYHOME_TZ}"        
-      - "NODERED_ACCESS_TOKEN=${MYHOME_NODERED_ACCESS_TOKEN}"
+      - "TZ=${TZ}"      
+      - "NODERED_ACCESS_TOKEN=${NODERED_ACCESS_TOKEN}"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.nodered.rule=Host(`${MYHOME_TRAEFIK_DOMAIN}`)&&PathPrefix(`/nodered`)"
+      - "traefik.http.routers.nodered.rule=Host(`${TRAEFIK_DOMAIN}`)&&PathPrefix(`/nodered`)"
       - "traefik.http.routers.nodered.entrypoints=https"
       - "traefik.http.routers.nodered.tls=true"
       - "traefik.http.routers.nodered.tls.certresolver=myhomeresolver"
@@ -127,10 +129,11 @@ services:
       - 8200:8200
     volumes:
       - "/etc/timezone:/etc/timezone:ro"
-      - "./homeassistant/myhome/duplicati/config:/config"
-      - "./homeassistant/myhome/duplicati/backups:/backups"
+      - "./duplicati/config:/config"
+      - "./duplicati/backups:/backups"
       - "$HOME:/source"
     environment:
+      - "TZ=${TZ}"      
 #     - PUID=1000
 #     - PGID=1000
 #     - TZ=Europe/Paris
@@ -142,14 +145,14 @@ services:
     user: "${CURRENT_UID}:${CURRENT_GID}"
     restart: unless-stopped 
     ports:
-      - 1883:1883
       - 8883:8883
-      - 9001:9001
     volumes:
       - "/etc/timezone:/etc/timezone:ro"
-      - "./homeassistant/myhome/mosquitto/config:/mosquitto/config"
-      - "./homeassistant/myhome/mosquitto/log:/mosquitto/log"
-      - "./homeassistant/myhome/mosquitto/data:/mosquitto/data"
+      - "./mosquitto/config:/mosquitto/config"
+      - "./mosquitto/log:/mosquitto/log"
+      - "./mosquitto/data:/mosquitto/data"
+    environment:
+      - "TZ=${TZ}"      
 
   zigbee2mqttGUI:
     depends_on:
@@ -157,12 +160,16 @@ services:
     image: "carldebilly/zigbee2mqttassistant"
     container_name: "zigbee2mqttGUI"
     restart: unless-stopped 
+    user: "${CURRENT_UID}:${CURRENT_GID}"
     ports:
       - 8880:80
     volumes:
       - "/etc/timezone:/etc/timezone:ro"
     environment:
+      - "TZ=${TZ}"      
       - "Z2MA_SETTINGS__MQTTSERVER=mosquitto"
+      - "Z2MA_SETTINGS__MQTTSECURE=INSECURE"
+      - "Z2MA_SETTINGS__MQTTPORT=8883"
       - "Z2MA_SETTINGS__MQTTUSERNAME=${MQTT_USER}" 
       - "Z2MA_SETTINGS__MQTTPASSWORD=${MQTT_PASSWORD}"
 
@@ -175,25 +182,27 @@ services:
       - "80:80"
       - "8080:8080"
     volumes:
+      - "/etc/timezone:/etc/timezone:ro"
       - "/var/run/docker.sock:/var/run/docker.sock"
       - "./traefik/acme:/etc/traefik/acme"
     environment:
-     - "TRAEFIK_ACCESSLOG=false"
-     - "TRAEFIK_LOG_LEVEL=error"  
-     - "TRAEFIK_ACCESSLOG_FIELDS_DEFAULTMODE=keep"
-     - "TRAEFIK_ACCESSLOG_FIELDS_HEADERS_DEFAULTMODE=keep"
-     - "TRAEFIK_ENTRYPOINTS_HTTP=true"
-     - "TRAEFIK_ENTRYPOINTS_HTTP_ADDRESS=:80"
-     - "TRAEFIK_ENTRYPOINTS_HTTPS=true"
-     - "TRAEFIK_ENTRYPOINTS_HTTPS_ADDRESS=:443"
-     - "TRAEFIK_PROVIDERS_DOCKER=true"
-     - "TRAEFIK_PROVIDERS_DOCKER_EXPOSEDBYDEFAULT=false"
-     - "TRAEFIK_API=false"
-     - "TRAEFIK_API_INSECURE=true"
-     - "TRAEFIK_CERTIFICATESRESOLVERS_MYHOMERESOLVER=true"
-     - "TRAEFIK_CERTIFICATESRESOLVERS_MYHOMERESOLVER_ACME_EMAIL=${MYHOME_EMAIL}"
-     - "TRAEFIK_CERTIFICATESRESOLVERS_MYHOMERESOLVER_ACME_STORAGE=/etc/traefik/acme/acme.json"
-     - "TRAEFIK_CERTIFICATESRESOLVERS_MYHOMERESOLVER_ACME_HTTPCHALLENGE_ENTRYPOINT=http"
+      - "TZ=${TZ}"      
+      - "TRAEFIK_ACCESSLOG=false"
+      - "TRAEFIK_LOG_LEVEL=error"  
+      - "TRAEFIK_ACCESSLOG_FIELDS_DEFAULTMODE=keep"
+      - "TRAEFIK_ACCESSLOG_FIELDS_HEADERS_DEFAULTMODE=keep"
+      - "TRAEFIK_ENTRYPOINTS_HTTP=true"
+      - "TRAEFIK_ENTRYPOINTS_HTTP_ADDRESS=:80"
+      - "TRAEFIK_ENTRYPOINTS_HTTPS=true"
+      - "TRAEFIK_ENTRYPOINTS_HTTPS_ADDRESS=:443"
+      - "TRAEFIK_PROVIDERS_DOCKER=true"
+      - "TRAEFIK_PROVIDERS_DOCKER_EXPOSEDBYDEFAULT=false"
+      - "TRAEFIK_API=false"
+      - "TRAEFIK_API_INSECURE=true"
+      - "TRAEFIK_CERTIFICATESRESOLVERS_MYHOMERESOLVER=true"
+      - "TRAEFIK_CERTIFICATESRESOLVERS_MYHOMERESOLVER_ACME_EMAIL=${EMAIL}"
+      - "TRAEFIK_CERTIFICATESRESOLVERS_MYHOMERESOLVER_ACME_STORAGE=/etc/traefik/acme/acme.json"
+      - "TRAEFIK_CERTIFICATESRESOLVERS_MYHOMERESOLVER_ACME_HTTPCHALLENGE_ENTRYPOINT=http"
     labels:
       - "traefik.enable=false"
       - "traefik.http.routers.api.rule=PathPrefix(`/api`)||PathPrefix(`/dashboard`)"

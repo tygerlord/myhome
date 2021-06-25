@@ -1,6 +1,5 @@
-#/bin/sh
+#/bin/bash
 
-source myhome_env.sh || exit 2
 
-docker-compose down $@
+docker-compose --env-file myhome.env down $@
 

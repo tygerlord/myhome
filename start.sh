@@ -7,31 +7,33 @@ Help()
 {
    # Display Help
    echo
-   echo "You must have a file called 'myhome_env.sh' to export env vars"
+   echo "You must have a file called 'myhome.env' to export env vars"
    echo
    echo
 
    exit 2
 }
 
-source myhome_env.sh || Help
+if [ ! -e myhome.env ]; then
+      	Help
+fi
 
 mkdir -p ./homeassistant
 
-mkdir -p ./homeassistant/myhome/esphome
+mkdir -p ./esphome
 
-mkdir -p ./homeassistant/myhome/nodered
+mkdir -p ./nodered
 
-mkdir -p ./homeassistant/myhome/rhasspy
+mkdir -p ./rhasspy
 
-mkdir -p ./homeassistant/myhome/rasa
+mkdir -p ./rasa
 
 mkdir -p ./traefik
 
-mkdir -p ./homeassistant/myhome/duplicati/config
-mkdir -p ./homeassistant/myhome/duplicati/backups
+mkdir -p ./duplicati/config
+mkdir -p ./duplicati/backups
 
 truncate -s 0 ./homeassistant/home-assistant.log
 
-docker-compose up -d --remove-orphans $@
+docker-compose --env-file myhome.env up -d --remove-orphans $@
 
